@@ -50,16 +50,22 @@ def train(
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--env', type=str, default='SafetyPointCircle1-v0')
     parser.add_argument('--algo', type=str, default='PPOLag')
-    parser.add_argument('--venvs', type=int, default=2)
-    parser.add_argument('--torchthr', type=int, default=1)
-    parser.add_argument('--numpool', type=int, default=1)
-    parser.add_argument('--timesteps', type=int, default=10000000)
-    parser.add_argument('--steps_epoch', type=int, default=20000)
     parser.add_argument('--lambda_init', type=float, default=0.03)
     parser.add_argument('--exp', type=str, default='lambda_range')
+    parser.add_argument('--Kp', type=float, default=0.0)
+    parser.add_argument('--Ki', type=float, default=1.0)
+    parser.add_argument('--Kd', type=float, default=0.0)
+    parser.add_argument('--cost_lim', type=float, default=25.0)
+    parser.add_argument('--timesteps', type=int, default=10000000)
+
+    parser.add_argument('--venvs', type=int, default=5)
+    parser.add_argument('--torchthr', type=int, default=1)
+    parser.add_argument('--numpool', type=int, default=1)
+    parser.add_argument('--steps_epoch', type=int, default=20000)
 
     return parser.parse_args()
 
@@ -77,20 +83,35 @@ def main():
     steps_epoch = args.steps_epoch
     lambda_init = args.lambda_init
     exp = args.exp
+    k_p = args.Kp
+    k_i = args.Ki
+    k_d = args.Kd
+    cost_lim = args.cost_lim
 
     if exp == 'fixed_lambda':
-        eg = ExperimentGrid(exp_name=f'{algo}_{env}_{exp}_{lambda_init}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}/seed_{seed}/')
-        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
-        eg.add('lagrange_cfgs:lambda_lr', [0.0])
+        eg = ExperimentGrid(exp_name=f'{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init]) # the value the lagrange multiplier is kept fixed at
+        eg.add('lagrange_cfgs:lambda_lr', [0.0]) # lagrange multiplier is manually kept fixed during trainig
     
-    else:
-        eg = ExperimentGrid(exp_name=f'{algo}_{env}_{exp}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}/seed_{seed}/')
+    if exp == 'auto_update_GA':
+        eg = ExperimentGrid(exp_name=f'{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:cost_limit', [cost_lim])
 
-    # Set the algorithms.
+    if exp == 'auto_update_PID':
+        # algo = 'CPPOPID'
+        eg = ExperimentGrid(exp_name=f'{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{k_p=}_{k_i=}_{k_d=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:pid_kp', [k_p])
+        eg.add('lagrange_cfgs:pid_ki', [k_i])
+        eg.add('lagrange_cfgs:pid_kd', [k_d])
+        eg.add('lagrange_cfgs:cost_limit', [cost_lim])
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
+
+
+    # Set the algorithm
     base_policy = [algo]
 
-    # Set the environments.
-    mujoco_envs = [env]#, 'SafetyPointGoal1-v0'] #, 'SafetyPointButton1-v0', 'SafetyPointPush1-v0'] # Safe Navigation level 1 all tasks with Point agent
+    # Set the environment
+    mujoco_envs = [env]
     eg.add('env_id', mujoco_envs)
     eg.add('algo', base_policy)
     eg.add('logger_cfgs:use_wandb', [False])
@@ -102,7 +123,6 @@ def main():
 
     eg.run(train, num_pool=numpool)
 
-    eg.analyze(parameter='algo', values=None, compare_num=None, cost_limit=None)
 
 
 
