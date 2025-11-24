@@ -3,7 +3,7 @@
 # Lagrangian Safe RL
 
   
-This repository is the **public mirror** of the working (private) codebase for our project on **Lagrangian-based Safe Reinforcement Learning (Safe RL)**.
+This repository provides codebase for our project on **Lagrangian-based Safe Reinforcement Learning (Safe RL)**.
 
 It is intended for **reproducing the results** from our paper and for getting started with your own empirical analysis of Lagrangian multiplier behavior in Safe RL.
 
