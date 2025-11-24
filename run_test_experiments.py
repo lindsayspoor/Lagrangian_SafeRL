@@ -54,7 +54,7 @@ def parse_args():
     parser.add_argument('--env', type=str, default='SafetyPointCircle1-v0')
     parser.add_argument('--algo', type=str, default='PPOLag')
     parser.add_argument('--lambda_init', type=float, default=0.03)
-    parser.add_argument('--exp', type=str, default='lambda_range')
+    parser.add_argument('--exp', type=str, default='fixed_lambda')
     parser.add_argument('--Kp', type=float, default=0.0)
     parser.add_argument('--Ki', type=float, default=1.0)
     parser.add_argument('--Kd', type=float, default=0.0)
