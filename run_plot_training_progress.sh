@@ -15,14 +15,18 @@ SEEDS=$(find "$BASE_DIR" -type d -name "seed_*" \
 
 
 python plot_training_progress.py \
-    --exp "auto_update_GA" \
+    --exp "auto_update_PID" \
     --lambda_values $LAMBDAS \
-    --algo "PPOLag" \
+    --algo "CPPOPID" \
     --cost_lim 25.0 \
     --env "SafetyPointCircle1-v0" \
     --save_dir "./plots/training_curves/" \
     --timesteps 40000 \
-    --seeds $SEEDS
+    --seeds $SEEDS \
+    --Kp 0.0001 \
+    --Ki 0.0001 \
+    --Kd 0.0 \
+
 
 
 echo "Done."

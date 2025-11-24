@@ -1,6 +1,5 @@
 import os
 import sys
-from datetime import datetime
 import argparse
 
 import omnisafe
@@ -50,7 +49,7 @@ def train(
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--env', type=str, default='SafetyPointCircle1-v0')
     parser.add_argument('--algo', type=str, default='PPOLag')
@@ -89,22 +88,27 @@ def main():
     cost_lim = args.cost_lim
 
     if exp == 'fixed_lambda':
+        if algo != "PPOLag":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'PPOLag'.")
         eg = ExperimentGrid(exp_name=f'{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{lambda_init=}/seed_{seed}/')
         eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init]) # the value the lagrange multiplier is kept fixed at
         eg.add('lagrange_cfgs:lambda_lr', [0.0]) # lagrange multiplier is manually kept fixed during trainig
     
     if exp == 'auto_update_GA':
+        if algo != "PPOLag":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'PPOLag'.")
         eg = ExperimentGrid(exp_name=f'{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}/seed_{seed}/')
         eg.add('lagrange_cfgs:cost_limit', [cost_lim])
 
     if exp == 'auto_update_PID':
-        # algo = 'CPPOPID'
-        eg = ExperimentGrid(exp_name=f'{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{k_p=}_{k_i=}_{k_d=}_{lambda_init=}/seed_{seed}/')
+        if algo != "CPPOPID":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'CPPOPID'.")
+        eg = ExperimentGrid(exp_name=f'{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{k_p=}_{k_i=}_{k_d=}/seed_{seed}/')
         eg.add('lagrange_cfgs:pid_kp', [k_p])
         eg.add('lagrange_cfgs:pid_ki', [k_i])
         eg.add('lagrange_cfgs:pid_kd', [k_d])
         eg.add('lagrange_cfgs:cost_limit', [cost_lim])
-        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
+        # eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
 
 
     # Set the algorithm
