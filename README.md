@@ -1,6 +1,6 @@
 
 
-# Lagrangian Safe RL — Public Mirror (Reproducibility Repo)
+# Lagrangian Safe RL
 
   
 This repository is the **public mirror** of the working (private) codebase for our project on **Lagrangian-based Safe Reinforcement Learning (Safe RL)**.
