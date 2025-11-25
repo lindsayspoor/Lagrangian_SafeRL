@@ -86,9 +86,11 @@ run:
 
 python run_test_experiments.py \
 
---exp fixed_lambda \
+--exp "fixed_lambda" \
 
---algo PPOLag \
+--algo "PPOLag" \
+
+--env "SafetyPointCircle1-v0" \
 
 --cost_lim 25.0 \
 
@@ -106,7 +108,7 @@ python run_test_experiments.py \
 
 ```bash
 
---exp auto_update_GA --algo PPOLag
+--exp "auto_update_GA" --algo "PPOLag"
 
 ```
 
@@ -114,7 +116,7 @@ python run_test_experiments.py \
 
 ```bash
 
---exp auto_update_PID --algo CPPOPID --Kp 0.0001 --Ki 0.0001 --Kd 0.0
+--exp "auto_update_PID" --algo "CPPOPID" --Kp 0.0001 --Ki 0.0001 --Kd 0.0
 
 ```
 
