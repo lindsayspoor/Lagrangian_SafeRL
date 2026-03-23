@@ -272,7 +272,7 @@ with reward-scale-invariance (currently only implemented for PPO-Lag, SAC-Lag an
 If you use this repository in academic work, please cite:
 
 Spoor, L., Serra-Gómez, Á., Plaat, A., & Moerland, T.
-*Towards a Practical Understanding of Lagrangian Methods in Safe Reinforcement Learning* arXiv:2510.17564, 2025.
+*Towards a Practical Understanding of Lagrangian Methods in Safe Reinforcement Learning* arXiv:2510.17564, 2026.
 
 ---
 
