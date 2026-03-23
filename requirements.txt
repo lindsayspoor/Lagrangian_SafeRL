@@ -1,0 +1,9 @@
+numpy
+torch
+matplotlib
+seaborn
+pandas
+scipy
+statsmodels
+safety-gymnasium
+git+https://github.com/lindsayspoor/omnisafe-fork.git
