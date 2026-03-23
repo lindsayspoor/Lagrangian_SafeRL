@@ -14,18 +14,23 @@ SEEDS=$(find "$BASE_DIR" -type d -name "seed_*" \
     | sort -nu)
 
 
+# Specify the experiment settings you want to produce training curves of
+# (should be the same as the settings you specified to train your models on)
+
 python plot_training_progress.py \
-    --exp "auto_update_PID" \
+    --exp "auto_update_PID_rsi" \
     --lambda_values $LAMBDAS \
-    --algo "CPPOPID" \
+    --algo "CPPOPIDRSI" \
     --cost_lim 25.0 \
-    --env "SafetyPointCircle1-v0" \
-    --save_dir "./plots/training_curves/" \
-    --timesteps 40000 \
+    --env "SafetyAntVelocity-v1" \
+    --save_dir "./" \
+    --timesteps 35000000 \
     --seeds $SEEDS \
     --Kp 0.0001 \
     --Ki 0.0001 \
     --Kd 0.0 \
+    --lambda_init 1.0 \
+
 
 
 

@@ -1,13 +1,11 @@
 
 
-# Lagrangian Safe RL
+# Lagrangian Safe RL Open-Source Code Base
 
-  
-This repository provides codebase for our project on **Lagrangian-based Safe Reinforcement Learning (Safe RL)**.
 
-It is intended for **reproducing the results** from our paper and for getting started with your own empirical analysis of Lagrangian multiplier behavior in Safe RL.
+Tjis repo provides an open-source codebase to get started with running experiments as shown in our paper and for getting started with your own empirical analysis of Lagrangian multiplier behavior in Safe RL.
 
-**Paper:** *An Empirical Study of Lagrangian Methods in Safe Reinforcement Learning*
+**Paper:** *Towards a Practical Understanding of Lagrangian Methods in Safe Reinforcement Learning*
 **Authors:** L. Spoor, Á. Serra-Gómez, A. Plaat, T. Moerland
 **arXiv:** https://arxiv.org/pdf/2510.17564
 **Corresponding author:** l.j.spoor@liacs.leidenuniv.nl
@@ -28,11 +26,9 @@ If you run into benchmark-specific issues, please consult their documentation
 
 ```bash
 
-conda create -n omnisafe python=3.8
+conda create -n lag_saferl python=3.9
 
-conda activate omnisafe
-
-pip install omnisafe
+conda activate lag_saferl
 
 ````
   
@@ -43,15 +39,17 @@ Before running experiments or plots, ensure all shell scripts are executable:
 
 ```bash
 
-chmod -x run_plot_lambda_profile.sh
+chmod +x run_plot_lambda_profile.sh
 
-chmod -x run_plot_training_progress.sh
+chmod +x run_plot_training_progress.sh
+
+chmod +x run_experiments.sh
 
   
 
 cd exp-x
 
-chmod -x collect_all_seeds.sh
+chmod +x collect_all_seeds.sh
 
 cd ..
 
@@ -63,11 +61,11 @@ Experiments are launched via:
 
 ```bash
 
-python run_test_experiments.py
+/.run_experiments.sh
 
 ```  
 
-You can specify settings through command-line arguments.
+You can adjust experiment-specific settings in run_experiments.sh.
 
 
 ### Example: fixed λ experiment
@@ -80,17 +78,15 @@ To train models with:
 * seed = 0
 * timesteps = 100000
 
-run:
+adjust the settings in run_experiments.sh to:
 
 ```bash
 
 python run_test_experiments.py \
 
---exp "fixed_lambda" \
+--exp fixed_lambda \
 
---algo "PPOLag" \
-
---env "SafetyPointCircle1-v0" \
+--algo PPOLag \
 
 --cost_lim 25.0 \
 
@@ -108,7 +104,8 @@ python run_test_experiments.py \
 
 ```bash
 
---exp "auto_update_GA" --algo "PPOLag"
+--exp auto_update_GA \
+--algo PPOLag
 
 ```
 
@@ -116,7 +113,11 @@ python run_test_experiments.py \
 
 ```bash
 
---exp "auto_update_PID" --algo "CPPOPID" --Kp 0.0001 --Ki 0.0001 --Kd 0.0
+--exp auto_update_PID \
+--algo CPPOPID \
+--Kp 0.0001 \
+--Ki 0.0001 \
+--Kd 0.0
 
 ```
 
@@ -149,7 +150,7 @@ This parses each seed’s `progress.csv` and prepares the files for downstream a
 
 ## Plotting λ-profiles
 
-To generate λ-profile plots over fixed multiplier runs:
+To generate λ-profile plots and empirical Pareto frontier curves over fixed multiplier runs:
 
 
 ```bash
@@ -208,20 +209,21 @@ Edit the script to match the experiment you want to visualize.
 
   
 
-## Command-line arguments
+## Experiment-specific arguments
 
   
-### `run_test_experiments.py`
+### `run_experiments.sh`
 
 
 * `--seed` *(int, default=0)*: Seed for an individual run.
 * `--env` *(str, default="SafetyPointCircle1-v0")*: Any Safety Gymnasium MuJoCo environment.
-* `--algo` *(str, default="PPOLag")*: `"PPOLag"`: fixed multiplier or GA-updated multiplier; `"CPPOPID"`: PID-controlled multiplier updates
+* `--algo` *(str, default="PPOLag")*: `"PPOLag","TRPOLag", "DDPGLag", "SACLag", "TD3Lag"`: fixed multiplier or GA-updated multiplier; `'CPPOPID', 'TRPOPID', 'DDPGPID', 'SACPID', 'TD3PID'`: PID-controlled multiplier updates;
+with reward-scale-invariance (currently only implemented for PPO-Lag, SAC-Lag and CPPOPID-Lag): 'PPOLagRSI', 'SACLagRSI', 'CPPOPIDRSI'
 * `--lambda_init` *(float, default=0.03)*: Initial multiplier value. For fixed-λ experiments, this is the constant value used throughout training.
-* `--exp` *(str, default="fixed_lambda")*: Experiment type: `fixed_lambda`: multiplier fixed during training; `auto_update_GA`: gradient-ascent multiplier updates; `auto_update_PID`: PID-controlled multiplier updates
-* `--Kp` *(float, default=0.0)*: Proportional gain (only for `auto_update_PID`)
-* `--Ki` *(float, default=1.0)*: Integral gain (only for `auto_update_PID`).
-* `--Kd` *(float, default=0.0)*: Derivative gain (only for `auto_update_PID`).
+* `--exp` *(str, default="fixed_lambda")*: Experiment type: `fixed_lambda`, `fixed_lambda_rsi`, `fixed_lambda_rsi_sac`: multiplier fixed during training (rsi for reward-scale-invariance, rsi_sac for SAC-Lag specifically); `auto_update_GA`, `auto_update_GA_rsi`, `auto_update_GA_rsi_sac`: gradient-ascent multiplier updates; `auto_update_PID`, `auto_update_PID_rsi`: PID-controlled multiplier updates, rsi for reward-scale-invariance
+* `--Kp` *(float, default=0.0)*: Proportional gain (only for `auto_update_PID`, `auto_update_PID_rsi`)
+* `--Ki` *(float, default=1.0)*: Integral gain (only for `auto_update_PID`, `auto_update_PID_rsi`).
+* `--Kd` *(float, default=0.0)*: Derivative gain (only for `auto_update_PID`, `auto_update_PID_rsi`).
 * `--cost_lim` *(float, default=25.0)*:  Cost limit the algorithm targets (relevant for GA/PID updates).
 * `--timesteps` *(int, default=100000)*: Total training timesteps.
 
@@ -232,7 +234,7 @@ Edit the script to match the experiment you want to visualize.
 
 ---
 
-### `run_plot_lambda_profile.sh` / `plot_lambda_profile.py`
+### `run_plot_lambda_profile.sh` 
 
 * `--lambda_values` *(default: `$LAMBDAS`)*: List like `0.03 0.05 0.07`, or use the auto-extracted defaults
 * `--algo` *(default: "PPOLag")*: Only supports `"PPOLag"`.
@@ -268,7 +270,7 @@ Edit the script to match the experiment you want to visualize.
 If you use this repository in academic work, please cite:
 
 Spoor, L., Serra-Gómez, Á., Plaat, A., & Moerland, T.
-*An Empirical Study of Lagrangian Methods in Safe Reinforcement Learning.* arXiv:2510.17564, 2025.
+*Towards a Practical Understanding of Lagrangian Methods in Safe Reinforcement Learning* arXiv:2510.17564, 2025.
 
 ---
 

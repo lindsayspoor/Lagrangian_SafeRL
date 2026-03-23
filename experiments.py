@@ -1,0 +1,220 @@
+import os
+import sys
+import argparse
+
+import omnisafe
+from omnisafe.common.experiment_grid import ExperimentGrid
+from omnisafe.typing import NamedTuple, Tuple
+
+from datetime import datetime
+import warnings
+import torch
+
+
+
+def train(
+    exp_id: str, algo: str, env_id: str, custom_cfgs: NamedTuple
+) -> Tuple[float, float, float]:
+    """Train a policy from exp-x config with OmniSafe.
+
+    Args:
+        exp_id (str): Experiment ID.
+        algo (str): Algorithm to train.
+        env_id (str): The name of test environment.
+        custom_cfgs (NamedTuple): Custom configurations.
+        num_threads (int, optional): Number of threads. Defaults to 6.
+    """
+    terminal_log_name = 'terminal.log'
+    error_log_name = 'error.log'
+    if 'seed' in custom_cfgs:
+        terminal_log_name = f'seed{custom_cfgs["seed"]}_{terminal_log_name}'
+        error_log_name = f'seed{custom_cfgs["seed"]}_{error_log_name}'
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
+    print(f'exp-x: {exp_id} is training...')
+    if not os.path.exists(custom_cfgs['logger_cfgs']['log_dir']):
+        os.makedirs(custom_cfgs['logger_cfgs']['log_dir'], exist_ok=True)
+    # pylint: disable-next=consider-using-with
+    sys.stdout = open(
+        os.path.join(f'{custom_cfgs["logger_cfgs"]["log_dir"]}', terminal_log_name),
+        'w',
+        encoding='utf-8',
+    )
+    # pylint: disable-next=consider-using-with
+    sys.stderr = open(
+        os.path.join(f'{custom_cfgs["logger_cfgs"]["log_dir"]}', error_log_name),
+        'w',
+        encoding='utf-8',
+    )
+    agent = omnisafe.Agent(algo, env_id, custom_cfgs=custom_cfgs)
+    reward, cost, ep_len = agent.learn()
+    return reward, cost, ep_len
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--env', type=str, default='SafetyPointCircle1-v0')
+    parser.add_argument('--algo', type=str, default='PPOLag')
+    parser.add_argument('--lambda_init', type=float, default=1.0)
+    parser.add_argument('--exp', type=str, default='fixed_lambda')
+    parser.add_argument('--Kp', type=float, default=0.0)
+    parser.add_argument('--Ki', type=float, default=1.0)
+    parser.add_argument('--Kd', type=float, default=0.0)
+    parser.add_argument('--cost_lim', type=float, default=25.0)
+    parser.add_argument('--timesteps', type=int, default=10000000)
+    parser.add_argument('--slurm_job_id', type=int, default=0)
+
+    parser.add_argument('--venvs', type=int, default=10)
+    parser.add_argument('--torchthr', type=int, default=1)
+    parser.add_argument('--numpool', type=int, default=1)
+    parser.add_argument('--steps_epoch', type=int, default=20000)
+    parser.add_argument('--hidden_sizes', type=int, nargs='+', default = [512,512])
+    parser.add_argument('--activation', type=str, default ='elu')
+
+    return parser.parse_args()
+
+def main():
+
+
+    args = parse_args()
+    seed = args.seed
+    algo = args.algo
+    env = args.env
+    venvs = args.venvs
+    torchthr = args.torchthr
+    numpool = args.numpool
+    timesteps = args.timesteps
+    steps_epoch = args.steps_epoch
+    hidden_sizes = tuple(args.hidden_sizes)
+    activation = args.activation
+    activation = activation.strip().lower()
+    lambda_init = args.lambda_init
+    exp = args.exp
+    k_p = args.Kp
+    k_i = args.Ki
+    k_d = args.Kd
+    cost_lim = args.cost_lim
+    job_id = args.slurm_job_id
+
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")  # e.g. 20251125-143012
+
+
+    if exp == 'fixed_lambda':
+        if algo not in ("PPOLag","TRPOLag", "DDPGLag", "SACLag", "TD3Lag"):
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'PPOLag','TRPOLag', 'DDPGLag', 'SACLag', 'TD3Lag'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init]) # the value the lagrange multiplier is kept fixed at
+        eg.add('lagrange_cfgs:lambda_lr', [0.0]) # lagrange multiplier is manually kept fixed during trainig
+    
+    if exp == 'auto_update_GA':
+        if algo not in ("PPOLag","TRPOLag", "DDPGLag", "SACLag", "TD3Lag"):
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'PPOLag','TRPOLag', 'DDPGLag', 'SACLag', 'TD3Lag'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:cost_limit', [cost_lim])
+
+    if exp == 'auto_update_PID':
+        if algo not in ("CPPOPID","TRPOPID", "DDPGPID", 'SACPID', 'TD3PID'):
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'CPPOPID', 'TRPOPID', 'DDPGPID', 'SACPID', 'TD3PID'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{k_p=}_{k_i=}_{k_d=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:pid_kp', [k_p])
+        eg.add('lagrange_cfgs:pid_ki', [k_i])
+        eg.add('lagrange_cfgs:pid_kd', [k_d])
+        eg.add('lagrange_cfgs:cost_limit', [cost_lim])
+        # eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
+
+    if exp == 'fixed_lambda_rsi':
+        if algo != "PPOLagRSI":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'PPOLagRSI'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init]) # the value the lagrange multiplier is kept fixed at
+        eg.add('lagrange_cfgs:lambda_lr', [0.0]) # lagrange multiplier is manually kept fixed during trainig
+
+    if exp == 'fixed_lambda_rsi_sac':
+        if algo != "SACLagRSI":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'SACLagRSI'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init]) # the value the lagrange multiplier is kept fixed at
+        eg.add('lagrange_cfgs:lambda_lr', [0.0]) # lagrange multiplier is manually kept fixed during trainig
+        eg.add('algo_cfgs:update_iters', [1])   # start with 10
+        eg.add('algo_cfgs:update_cycle', [20])
+        eg.add('algo_cfgs:batch_size', [256])
+        eg.add('algo_cfgs:beta_grad_every', [50])
+        eg.add('algo_cfgs:beta_grad_batch', [128])
+
+
+    if exp == 'auto_update_GA_rsi':
+        if algo != "PPOLagRSI":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'PPOLagRSI'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:cost_limit', [cost_lim])
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
+
+    if exp == 'auto_update_GA_rsi_sac':
+        if algo != "SACLagRSI":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'SACLagRSI'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:cost_limit', [cost_lim])
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
+        eg.add('algo_cfgs:update_iters', [1])   # start with 10
+        eg.add('algo_cfgs:update_cycle', [20])
+        eg.add('algo_cfgs:batch_size', [256])
+        eg.add('algo_cfgs:beta_grad_every', [50])
+        eg.add('algo_cfgs:beta_grad_batch', [128])
+
+    if exp == 'auto_update_PID_rsi':
+        if algo != "CPPOPIDRSI":
+            raise ValueError(f"Invalid algo '{algo}'. Expected 'CPPOPIDRSI'.")
+        eg = ExperimentGrid(exp_name=f'{job_id}_{stamp}_{exp}_{algo}_{env}_{timesteps=}_{cost_lim=}_{k_p=}_{k_i=}_{k_d=}_{lambda_init=}/seed_{seed}/')
+        eg.add('lagrange_cfgs:pid_kp', [k_p])
+        eg.add('lagrange_cfgs:pid_ki', [k_i])
+        eg.add('lagrange_cfgs:pid_kd', [k_d])
+        eg.add('lagrange_cfgs:cost_limit', [cost_lim])
+        eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
+        # eg.add('lagrange_cfgs:lagrangian_multiplier_init', [lambda_init])
+
+
+    # Set the algorithm
+    base_policy = [algo]
+
+    # Set the environment
+    mujoco_envs = [env]
+    eg.add('env_id', mujoco_envs)
+    eg.add('algo', base_policy)
+    eg.add('logger_cfgs:use_wandb', [False])
+
+    eg.add('train_cfgs:vector_env_nums', [venvs])
+    eg.add('train_cfgs:torch_threads', [torchthr])
+    eg.add('train_cfgs:total_steps', [timesteps])
+    eg.add('train_cfgs:device', ['cpu'])
+
+    eg.add('algo_cfgs:steps_per_epoch', [steps_epoch])
+
+    eg.add('model_cfgs:actor:hidden_sizes', [hidden_sizes])
+    eg.add('model_cfgs:critic:hidden_sizes', [hidden_sizes])
+    eg.add('model_cfgs:actor:activation', [activation])
+    eg.add('model_cfgs:critic:activation', [activation])
+
+
+    eg.add('seed', [seed])
+    
+    
+
+
+    # # Set the device.
+    # Use exactly the GPUs Slurm exposes
+    available = torch.cuda.device_count()
+    gpu_id = list(range(available)) if available > 0 else None
+
+    # # if you want to use CPU, please set gpu_id = None
+    # gpu_id = None
+
+
+    eg.run(train, num_pool=numpool, gpu_id=gpu_id)
+
+
+
+
+if __name__ == '__main__':
+    main()

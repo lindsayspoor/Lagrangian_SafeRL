@@ -18,11 +18,13 @@ SEEDS=$(find "$BASE_DIR" -type d -name "seed_*" \
 # (should be the same as the settings you specified to train your models on)
 python plot_lambda_profile.py \
         --lambda_values $LAMBDAS \
-        --algo "PPOLag" \
+        --algo "PPOLagRSI" \
         --cost_lim 25.0 \
-        --env "SafetyPointCircle1-v0" \
+        --env "SafetyAntVelocity-v1" \
         --save_dir "./plots/lambda_profiles/" \
-        --timesteps 40000 \
-        --seeds $SEEDS
+        --timesteps 35000000 \
+        --seeds $SEEDS \
+        --exp "fixed_lambda_rsi" \
+
 
 echo "Done."
