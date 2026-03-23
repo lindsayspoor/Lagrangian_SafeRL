@@ -30,6 +30,8 @@ conda create -n lag_saferl python=3.9
 
 conda activate lag_saferl
 
+pip install -r requirements.txt
+
 ````
   
 ---
