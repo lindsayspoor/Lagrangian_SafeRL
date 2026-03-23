@@ -150,7 +150,7 @@ This parses each seed’s `progress.csv` and prepares the files for downstream a
 
   
 
-## Plotting λ-profiles
+## Plotting empirical Pareto Frontiers and λ-profiles
 
 To generate λ-profile plots and empirical Pareto frontier curves over fixed multiplier runs:
 
