@@ -84,7 +84,7 @@ adjust the settings in run_experiments.sh to:
 
 ```bash
 
-python run_test_experiments.py \
+python experiments.py \
 
 --exp fixed_lambda \
 
