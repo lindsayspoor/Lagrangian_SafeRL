@@ -1,0 +1,3 @@
+[submodule "./extern/omnisafe"]
+	path = ./extern/omnisafe
+	url = https://github.com/lindsayspoor/omnisafe-fork.git
