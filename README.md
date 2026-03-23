@@ -3,7 +3,7 @@
 # Lagrangian Safe RL Open-Source Code Base
 
 
-Tjis repo provides an open-source codebase to get started with running experiments as shown in our paper and for getting started with your own empirical analysis of Lagrangian multiplier behavior in Safe RL.
+This repo provides an open-source codebase to get started with running experiments as shown in our paper and for getting started with your own empirical analysis of Lagrangian multiplier behavior in Safe RL.
 
 **Paper:** *Towards a Practical Understanding of Lagrangian Methods in Safe Reinforcement Learning*
 **Authors:** L. Spoor, Á. Serra-Gómez, A. Plaat, T. Moerland
