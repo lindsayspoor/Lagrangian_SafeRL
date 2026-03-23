@@ -10,6 +10,12 @@ This repo provides an open-source codebase to get started with running experimen
 **arXiv:** https://arxiv.org/pdf/2510.17564
 **Corresponding author:** l.j.spoor@liacs.leidenuniv.nl
 
+
+This repo allows you to:
+- fully automatically run Lagrangian safe RL experiments with the Omnisafe experiment suite
+- have the option to select a 'reward-scale-invariant' version of PPO-Lag, SAC-Lag and CPPOPID, called PPOLagRSI, SACLagRSI and CPPOPIDRSI, respectively
+- produce plots that visualize the tradeoff between return and cost as a function of the Lagrange multiplier lambda as an empirical Pareto frontier
+
 ---
   
 ## Dependencies
